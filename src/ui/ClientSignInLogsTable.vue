@@ -144,10 +144,10 @@
 
       <v-divider />
 
-      <!-- TABLE CONTAINER -->
-      <div style="overflow-x: auto; overflow-y: hidden; position: relative;" v-if="headers.length > 0">
+      <!-- TABLE CONTAINER - REMOVED v-if CONDITION -->
+      <div style="overflow-x: auto; overflow-y: hidden; position: relative;">
         <v-data-table-server
-          :headers="headers"
+          :headers="headers.length ? headers : defaultHeaders"
           :items="pagedLogs"
           :items-length="filteredLogs.length"
           :loading="loading"
@@ -156,7 +156,7 @@
           @update:page="page = $event"
           @update:items-per-page="pageSize = $event"
           class="elevation-0 elegant-table"
-          :loading-text="'Loading audit logs...'"
+          :loading-text="'Loading 500 records from Azure...'"
           :no-data-text="'No sign-in logs found'"
           fixed-header
           height="65vh"
@@ -208,7 +208,7 @@
                       />
                       <div class="text-caption text-grey-darken-1 mt-1">
                         <v-icon icon="mdi-information-outline" size="14" class="mr-1" />
-                       Filtering
+                        Filtering
                       </div>
                     </v-card>
                   </v-menu>
@@ -307,28 +307,10 @@
             </tr>
           </template>
 
-          <!-- LOADING STATE -->
-          <template #loading>
-            <tr>
-              <td :colspan="headers.length || 1" class="pa-10 text-center">
-                <v-progress-circular
-                  indeterminate
-                  color="warning"
-                  size="40"
-                  width="2"
-                />
-                <div class="text-body-2 text-grey-darken-1 mt-4">
-                  Loading 500 records...
-                  <span v-if="hasActiveColumnFilters" class="d-block mt-1">Applying filters</span>
-                </div>
-              </td>
-            </tr>
-          </template>
-
-          <!-- NO DATA STATE -->
+          <!-- NO DATA STATE (shows when no data after loading) -->
           <template #no-data>
             <tr>
-              <td :colspan="headers.length || 1" class="pa-10 text-center">
+              <td :colspan="headers.length || 9" class="pa-10 text-center">
                 <v-icon 
                   :icon="hasActiveColumnFilters ? 'mdi-filter-off' : 'mdi-file-search-outline'" 
                   size="56" 
@@ -338,7 +320,7 @@
                   {{ hasActiveColumnFilters ? 'No matching records' : 'No sign-in logs' }}
                 </h4>
                 <p class="text-body-2 text-grey-darken-1 mb-4">
-                  {{ hasActiveColumnFilters ? 'Try adjusting your filters' : 'Data will appear here once available' }}
+                  {{ hasActiveColumnFilters ? 'Try adjusting your filters' : 'Click Refresh to load data' }}
                 </p>
                 <div>
                   <v-btn
@@ -364,13 +346,13 @@
             </tr>
           </template>
 
-          <!-- TABLE FOOTER -->
-          <template #bottom>
+          <!-- TABLE FOOTER (only show when there's data) -->
+          <template #bottom v-if="!loading && filteredLogs.length > 0">
             <div class="text-caption text-grey-darken-1 px-4 py-3 border-t d-flex justify-space-between">
               <div>
                 <span v-if="hasActiveColumnFilters" class="mr-3">
                   <v-icon icon="mdi-filter-check" size="16" class="mr-1" color="warning" />
-                  <span class="text-warning-darken-1">Client-side filtered</span>
+                  <span class="text-warning-darken-1">Filtered</span>
                 </span>
                 Showing {{ showingFrom }}-{{ showingTo }} of {{ filteredLogs.length }} records
                 <span class="text-grey-lighten-1 mx-2">|</span>
@@ -386,18 +368,8 @@
         </v-data-table-server>
       </div>
 
-      <!-- EMPTY STATE WHEN NO HEADERS -->
-      <div v-else-if="!loading && allLogs.length === 0" class="pa-10 text-center">
-        <v-icon icon="mdi-file-search-outline" size="56" class="text-grey-lighten-2 mb-4" />
-        <h4 class="text-h6 font-weight-regular mb-2 text-grey-darken-2">No sign-in logs</h4>
-        <p class="text-body-2 text-grey-darken-1 mb-4">Data will appear here once available</p>
-        <v-btn variant="tonal" @click="fetchLogs" prepend-icon="mdi-refresh" color="warning">
-          Refresh
-        </v-btn>
-      </div>
-
       <!-- PAGINATION CONTROLS - ONLY SHOW WHEN THERE'S DATA -->
-      <template v-if="headers.length > 0 && filteredLogs.length > 0">
+      <template v-if="!loading && filteredLogs.length > 0">
         <v-divider />
         <v-card-actions class="pa-4">
           <v-row align="center" justify="space-between" dense>
@@ -467,6 +439,19 @@ const defaultVisibleColumns = [
   'location',
   'clientAppUsed',
   'riskLevelAggregated'
+]
+
+/* ---------- DEFAULT HEADERS FOR INITIAL LOAD ---------- */
+const defaultHeaders = [
+  { title: 'Time', key: 'createdDateTime', width: '180px' },
+  { title: 'User', key: 'userDisplayName', width: '180px' },
+  { title: 'UPN', key: 'userPrincipalName', width: '250px' },
+  { title: 'Application', key: 'appDisplayName', width: '200px' },
+  { title: 'Status', key: 'status', width: '120px' },
+  { title: 'IP Address', key: 'ipaddress', width: '150px' },
+  { title: 'Location', key: 'location', width: '180px' },
+  { title: 'Client', key: 'clientAppUsed', width: '180px' },
+  { title: 'Risk', key: 'riskLevelAggregated', width: '120px' }
 ]
 
 /* ---------- ALL 77 COLUMNS (DYNAMIC) ---------- */
@@ -801,13 +786,13 @@ onMounted(fetchLogs)
 }
 
 :deep(::-webkit-scrollbar-thumb) {
-  background: #ffffff;
+  background: #ffd699;
   border-radius: 4px;
   transition: background 0.2s ease;
 }
 
 :deep(::-webkit-scrollbar-thumb:hover) {
-  background: #ffffff;
+  background: #ffb366;
 }
 
 /* TABLE BASE STYLES */
